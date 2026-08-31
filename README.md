@@ -64,6 +64,43 @@ responsibility for decisions built on them. `warehaus verify` reports
 honestly (a command that merely ran is `executed`, never `confirmed`), and
 unattended runs end in pull requests a person merges or rejects.
 
+## Use it with your agent
+
+Warehaus is built to be operated by an agent, not by hand. You ask business
+questions in a Claude Code (or Codex, OpenClaw, Hermes) session; the agent
+queries the source APIs through your CLI tools, answers from the claims, and
+maintains them as it learns. The warehaus commands are the guardrails
+around that loop, and the same commands gate your CI.
+
+Two pieces wire the agent in:
+
+**Project instructions.** `warehaus init` writes an `AGENTS.md` with the
+working rules (answer from claims, update the claim on correction, lint
+before committing, `executed` is not `confirmed`) and a `CLAUDE.md` that
+points to it. Codex, Cursor and OpenClaw read `AGENTS.md` natively; Claude
+Code follows the pointer. An agent that opens a scaffolded project knows the
+rules without being told.
+
+**The skills.** Three skills in [skills/](skills/) teach an agent the
+workflows, in the [agentskills](https://agentskills.io) format that Claude
+Code, Hermes and OpenClaw all load:
+
+- `warehaus`: the daily loop. When to write which claim type, how to handle
+  a user correction, how to read verify verdicts.
+- `connect-a-source`: wrapping a new API as a CLI tool (auth patterns, rate
+  limits, pagination) and recording its quirks as claims while testing,
+  with a definition of done that ends in claims, not just a script.
+- `nightly-loop`: the unattended maintenance pass described above.
+
+Install them with
+
+```bash
+npx skills add brianadvent/warehaus
+```
+
+or copy the directories into your agent's skill directory (for Claude Code:
+`~/.claude/skills/`).
+
 ## A claim
 
 ```markdown
@@ -160,43 +197,6 @@ python3 -m warehaus --config example/warehaus.toml lint
 python3 -m warehaus --config example/warehaus.toml verify
 python3 -m warehaus --config example/warehaus.toml stand --check
 ```
-
-## Use it with your agent
-
-Warehaus is built to be operated by an agent, not by hand. You ask business
-questions in a Claude Code (or Codex, OpenClaw, Hermes) session; the agent
-queries the source APIs through your CLI tools, answers from the claims, and
-maintains them as it learns. The commands above are the guardrails around
-that loop, and the same commands gate your CI.
-
-Two pieces wire the agent in:
-
-**Project instructions.** `warehaus init` writes an `AGENTS.md` with the
-working rules (answer from claims, update the claim on correction, lint
-before committing, `executed` is not `confirmed`) and a `CLAUDE.md` that
-points to it. Codex, Cursor and OpenClaw read `AGENTS.md` natively; Claude
-Code follows the pointer. An agent that opens a scaffolded project knows the
-rules without being told.
-
-**The skills.** Three skills in [skills/](skills/) teach an agent the
-workflows, in the [agentskills](https://agentskills.io) format that Claude
-Code, Hermes and OpenClaw all load:
-
-- `warehaus`: the daily loop. When to write which claim type, how to handle
-  a user correction, how to read verify verdicts.
-- `connect-a-source`: wrapping a new API as a CLI tool (auth patterns, rate
-  limits, pagination) and recording its quirks as claims while testing,
-  with a definition of done that ends in claims, not just a script.
-- `nightly-loop`: the unattended maintenance pass described above.
-
-Install them with
-
-```bash
-npx skills add brianadvent/warehaus
-```
-
-or copy the directories into your agent's skill directory (for Claude Code:
-`~/.claude/skills/`).
 
 ## Building your source tools
 
