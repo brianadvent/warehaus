@@ -101,7 +101,7 @@ npx skills add brianadvent/warehaus
 or copy the directories into your agent's skill directory (for Claude Code:
 `~/.claude/skills/`).
 
-## A claim
+## Claims
 
 ```markdown
 <!-- claim
