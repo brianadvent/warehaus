@@ -14,3 +14,18 @@ dirs = ["docs/adrs"]
 
 [verify]
 timeout = 60
+
+# Generated values: `warehaus stand` runs each command and owns the matching
+# <!--gen:id-->...<!--/gen--> range in the claims. Real projects usually also
+# set
+#
+#     [generator]
+#     command = "warehaus stand"
+#
+# so `warehaus verify` can hold generated claims against the collector. The
+# example leaves that unset to stay runnable without an installed CLI.
+
+[[stand.values]]
+id = "product-catalog-size"
+command = 'grep -c "^- SKU " docs/catalog.md'
+budget = "free"

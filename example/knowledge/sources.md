@@ -48,6 +48,21 @@ two must not be confused when debugging.
 <!-- /claim -->
 
 <!-- claim
+id: product-catalog-size
+type: count
+sot: shop-api
+maintenance: generated
+verify_cmd: "grep -c \"^- SKU \" docs/catalog.md"
+budget: free
+tolerance: 10%
+as_of: 2026-08-31
+-->
+The product catalog currently lists
+<!--gen:product-catalog-size-->6<!--/gen--> SKUs. The number between the
+markers is written by `warehaus stand`; a hand edit there shows up as drift.
+<!-- /claim -->
+
+<!-- claim
 id: wholesale-consignment-timing
 type: experience
 sot: person:alex

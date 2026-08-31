@@ -56,6 +56,7 @@ class Config:
     verify_timeout: int = 300
     protected_file: Path | None = None
     generator_command: str | None = None
+    stand_values: list[dict] = field(default_factory=list)
 
     # SoT prefix forms that are always allowed in addition to the fixed list.
     SOT_PREFIXES: tuple[str, ...] = ("code:", "adr:", "person:")
@@ -139,6 +140,25 @@ def load_config(explicit: str | None = None) -> Config:
     generator = raw.get("generator", {})
     generator_command = generator.get("command") or None
 
+    # [[stand.values]]: the collectors behind the gen ranges. Kept as plain
+    # dicts; `warehaus stand` owns their semantics. The budget vocabulary
+    # mirrors claims.BUDGETS (not imported here to avoid a config<->claims
+    # cycle).
+    stand_values: list[dict] = []
+    for i, entry in enumerate(raw.get("stand", {}).get("values", [])):
+        if "id" not in entry or "command" not in entry:
+            raise ConfigError(
+                f"{path}: [[stand.values]] entry {i + 1} needs both id and command"
+            )
+        budget = str(entry.get("budget", "free"))
+        if budget not in {"free", "single_call", "bulk"}:
+            raise ConfigError(
+                f"{path}: [[stand.values]] {entry['id']!r} has unknown budget {budget!r}"
+            )
+        stand_values.append(
+            {"id": str(entry["id"]), "command": str(entry["command"]), "budget": budget}
+        )
+
     return Config(
         path=path,
         root=root,
@@ -152,6 +172,7 @@ def load_config(explicit: str | None = None) -> Config:
         verify_timeout=int(verify.get("timeout", 300)),
         protected_file=(root / protected["file"]).resolve() if protected.get("file") else None,
         generator_command=generator_command,
+        stand_values=stand_values,
     )
 
 
