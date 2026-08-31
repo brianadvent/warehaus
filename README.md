@@ -123,20 +123,15 @@ was last checked and how to check it again. The full schema, with seven claim
 types from `structure` to `experience`, is in
 [docs/claim-schema.md](docs/claim-schema.md).
 
-## Numbers never live in prose
-
-A retrievable number never goes into documentation text, because text ages
-silently. This rule keeps a warehaus project honest. A count belongs in a
-`count` claim with a generated range:
+One discipline follows from this and keeps a project honest: a retrievable
+number never goes into documentation text, because text ages silently. A
+count belongs in a `count` claim with a generated range that `warehaus
+stand` owns and checks for drift:
 
 ```markdown
 The product catalog currently lists
 <!--gen:product-catalog-size-->1366<!--/gen--> SKUs.
 ```
-
-`warehaus stand` owns the value between the markers, `--check` reports drift
-(including hand edits), and `warehaus contradictions` flags the same number
-appearing in a second claim or in loose prose.
 
 ## The commands
 
