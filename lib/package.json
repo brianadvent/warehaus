@@ -1,0 +1,13 @@
+{
+  "name": "@warehaus/lib",
+  "version": "0.1.0",
+  "description": "Shared building blocks for warehaus source tools: rate limiters, paginators, output formatting, env loading.",
+  "type": "module",
+  "license": "MIT",
+  "exports": {
+    "./rate-limiter": "./rate-limiter.ts",
+    "./paginator": "./paginator.ts",
+    "./formatter": "./formatter.ts",
+    "./env": "./env.ts"
+  }
+}

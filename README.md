@@ -124,23 +124,43 @@ points to it. Codex, Cursor and OpenClaw read `AGENTS.md` natively; Claude
 Code follows the pointer. An agent that opens a scaffolded project knows the
 rules without being told.
 
-**The warehaus skill.** [skills/warehaus/SKILL.md](skills/warehaus/SKILL.md)
-teaches an agent the full workflow: when to write which claim type, how to
-handle a user correction, how to read verify verdicts. It follows the
-[agentskills](https://agentskills.io) format, so Claude Code, Hermes and
-OpenClaw all load it. Install it with
+**The skills.** Three skills in [skills/](skills/) teach an agent the
+workflows, in the [agentskills](https://agentskills.io) format that Claude
+Code, Hermes and OpenClaw all load:
+
+- `warehaus`: the daily loop. When to write which claim type, how to handle
+  a user correction, how to read verify verdicts.
+- `connect-a-source`: wrapping a new API as a CLI tool (auth patterns, rate
+  limits, pagination) and recording its quirks as claims while testing,
+  with a definition of done that ends in claims, not just a script.
+- `nightly-loop`: an unattended maintenance pass (lint, drift check,
+  budgeted verify, contradictions) that ends in at most one pull request
+  for a human to review. The loop never merges.
+
+Install them with
 
 ```bash
 npx skills add brianadvent/warehaus
 ```
 
-or copy `skills/warehaus/` into your agent's skill directory (for Claude
-Code: `~/.claude/skills/`).
+or copy the directories into your agent's skill directory (for Claude Code:
+`~/.claude/skills/`).
 
 A session then looks like this: you say "our billing API returns cents, I
 keep seeing inflated numbers", the agent writes a `structure` claim with a
 verify command, runs `warehaus lint`, and every later revenue question in
 any session starts from that recorded, checkable fact.
+
+## Building your source tools
+
+The agent needs CLI access to your systems. [lib/](lib/) has the shared
+pieces every wrapper needs, as dependency-free TypeScript run with `npx
+tsx`: two rate limiters with the tuning rule (throttle below the documented
+maximum, leave shared keys extra headroom), page- and cursor-based
+pagination, `--format=json|table|csv` output, and `.env` loading.
+[templates/source-tool.ts](templates/source-tool.ts) shows all of it in one
+working wrapper, and the `connect-a-source` skill turns the two into a
+repeatable procedure your agent executes against a real API.
 
 ## Numbers never live in prose
 
@@ -159,13 +179,10 @@ appearing in a second claim or in loose prose.
 
 ## What ships today, what is planned
 
-Today: the five commands, the claim schema, the warehaus skill, the offline
-example project, tests and CI. Planned next: a `connect-a-source` skill that
-walks an agent through wrapping a new API (auth, rate limits, pagination)
-and recording its quirks as claims, a `nightly-loop` skill for unattended
-maintenance runs that end in a pull request, and a small TypeScript library
-with the shared pieces of our API wrappers (rate limiter, paginator,
-formatter).
+Today: the five commands, the claim schema, the three skills, the tool
+library and template, the offline example project, tests and CI. Planned
+next: the PyPI release, and an inbox workflow that collects corrections
+from many agent sessions for a human to review before they become claims.
 
 ## License
 
