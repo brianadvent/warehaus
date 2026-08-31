@@ -101,7 +101,11 @@ npx skills add brianadvent/warehaus
 or copy the directories into your agent's skill directory (for Claude Code:
 `~/.claude/skills/`).
 
-## Claims
+## How knowledge is recorded
+
+Knowledge is recorded one fact per block, directly in your Markdown files.
+The unit is called a claim: a statement plus the metadata that makes it
+checkable.
 
 ```markdown
 <!-- claim
