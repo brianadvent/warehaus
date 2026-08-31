@@ -1,0 +1,7 @@
+[[areas]]
+name = "knowledge"
+root = "knowledge"
+files = ["*.md"]
+
+[schema]
+sots = ["shop-api"]

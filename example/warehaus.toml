@@ -1,0 +1,16 @@
+# Example warehaus project: a fictional toy shop with two source systems.
+# Everything here runs offline; the verify commands only grep local files.
+
+[[areas]]
+name = "knowledge"
+root = "knowledge"
+files = ["*.md"]
+
+[schema]
+sots = ["shop-api", "billing-api"]
+
+[adr]
+dirs = ["docs/adrs"]
+
+[verify]
+timeout = 60

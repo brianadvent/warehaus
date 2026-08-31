@@ -1,0 +1,19 @@
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "warehaus"
+version = "0.1.0.dev0"
+description = "An intelligent data warehouse for AI agents: curated, verifiable knowledge over live source systems."
+readme = "README.md"
+requires-python = ">=3.11"
+# Zero runtime dependencies, on purpose: the tool must run in any agent
+# sandbox that has a Python interpreter, with nothing to install first.
+dependencies = []
+
+[project.scripts]
+warehaus = "warehaus.cli:main"
+
+[tool.setuptools]
+packages = ["warehaus"]
