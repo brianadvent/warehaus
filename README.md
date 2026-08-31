@@ -12,18 +12,57 @@
 agent queries the source systems directly, guided by curated, verifiable
 knowledge.
 
-A classic data warehouse copies every source system into a central database
-overnight and lets BI tools chart the copy. The copy is always one sync old,
-the pipelines break on every API change, and the transformation knowledge
-("amounts are in cents", "cancelled invoices carry a `cancel_id`") is buried
-in pipeline code where nobody can read it.
+Company knowledge rarely lives in one place. It is spread across the shop,
+the accounting system, the CRM, fulfillment, spreadsheets, and the heads of
+individual people. So every new question about your own data becomes a
+ticket for an analyst or a developer, and every answer becomes a report
+that starts aging the day it ships.
 
-Warehaus inverts this. An AI agent (Claude Code, Codex, OpenClaw, Hermes)
-talks to the live APIs through thin CLI tools, and the transformation
-knowledge lives next to the code as **claims**: plain-Markdown statements
-with provenance, an as-of date and a command that checks each one against
-its source. The warehouse holds no data. It holds what an agent must know
-to get the data right, in a form the agent reads, obeys and maintains.
+Warehaus makes that knowledge legible to an AI agent instead. Thin CLI
+tools give the agent controlled access to the live systems. The business
+context that raw APIs cannot carry (which system is the source of truth for
+what, how revenue is calculated, which invoices do not count, what a
+colleague knows that no database shows) is recorded as **claims**:
+plain-Markdown statements with provenance, an as-of date and a command that
+checks each one against its source. The agent reads them, obeys them and
+maintains them. A classic warehouse copies your data into a central
+database and buries the rules in pipeline code; warehaus copies nothing and
+keeps the rules where every reader, human or machine, can check them.
+
+## What you can do with it
+
+**Answer cross-system questions in minutes.** "Which wholesale partners
+are going quiet?" joins the CRM with the invoices. "Which marketing
+channel is actually profitable?" joins ad spend with orders. The agent
+queries the live APIs, applies the recorded rules (amounts converted,
+cancellations excluded, the right source per sales channel) and can name
+the basis of every number: which claims, which derivation, verified when.
+Nobody builds a report, and there is no stale copy to distrust.
+
+**Record a rule once, benefit in every session.** You say "our billing API
+returns cents, I keep seeing inflated numbers." The agent writes a
+`structure` claim with a verify command and runs `warehaus lint`. Every
+later session, by any agent on any machine, divides by 100 without being
+told. Corrections work the same way: when a human corrects the agent, the
+fix lands in the claim, not in one chat that scrolls away.
+
+**Let the agent watch and act within defined bounds.** The `nightly-loop`
+skill runs unattended: drift in generated counts, refuted claims, dead
+references, contradictions. It triages, fixes one finding on a branch and
+opens a pull request with the evidence. It never merges. You wake up to a
+reviewable proposal, not to silently changed knowledge.
+
+**Feed your own tools from the same foundation.** The CLI tools and claims
+that serve the agent also serve dashboards, internal apps and one-off
+scripts. The business logic lives in one place instead of one copy per
+tool, so an update to a claim reaches everything built on top.
+
+**Keep humans the judges.** The more runs on this foundation, the more
+weight human judgment carries. Claims disclose their data basis,
+assumptions and derivation, so people can check them and take
+responsibility for decisions built on them. `warehaus verify` reports
+honestly (a command that merely ran is `executed`, never `confirmed`), and
+unattended runs end in pull requests a person merges or rejects.
 
 ## A claim
 
@@ -133,9 +172,7 @@ Code, Hermes and OpenClaw all load:
 - `connect-a-source`: wrapping a new API as a CLI tool (auth patterns, rate
   limits, pagination) and recording its quirks as claims while testing,
   with a definition of done that ends in claims, not just a script.
-- `nightly-loop`: an unattended maintenance pass (lint, drift check,
-  budgeted verify, contradictions) that ends in at most one pull request
-  for a human to review. The loop never merges.
+- `nightly-loop`: the unattended maintenance pass described above.
 
 Install them with
 
@@ -145,11 +182,6 @@ npx skills add brianadvent/warehaus
 
 or copy the directories into your agent's skill directory (for Claude Code:
 `~/.claude/skills/`).
-
-A session then looks like this: you say "our billing API returns cents, I
-keep seeing inflated numbers", the agent writes a `structure` claim with a
-verify command, runs `warehaus lint`, and every later revenue question in
-any session starts from that recorded, checkable fact.
 
 ## Building your source tools
 
@@ -176,13 +208,6 @@ The product catalog currently lists
 `warehaus stand` owns the value between the markers, `--check` reports drift
 (including hand edits), and `warehaus contradictions` flags the same number
 appearing in a second claim or in loose prose.
-
-## What ships today, what is planned
-
-Today: the five commands, the claim schema, the three skills, the tool
-library and template, the offline example project, tests and CI. Planned
-next: the PyPI release, and an inbox workflow that collects corrections
-from many agent sessions for a human to review before they become claims.
 
 ## License
 
