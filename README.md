@@ -18,11 +18,12 @@ the pipelines break on every API change, and the transformation knowledge
 ("amounts are in cents", "cancelled invoices carry a `cancel_id`") is buried
 in pipeline code where nobody can read it.
 
-Warehaus inverts this. The agent talks to the live APIs through thin CLI
-tools, and the transformation knowledge lives next to the code as **claims**:
-plain-Markdown statements with provenance, an as-of date and a command that
-checks each one against its source. The warehouse holds no data. It holds
-what an agent must know to get the data right.
+Warehaus inverts this. An AI agent (Claude Code, Codex, OpenClaw, Hermes)
+talks to the live APIs through thin CLI tools, and the transformation
+knowledge lives next to the code as **claims**: plain-Markdown statements
+with provenance, an as-of date and a command that checks each one against
+its source. The warehouse holds no data. It holds what an agent must know
+to get the data right, in a form the agent reads, obeys and maintains.
 
 ## A claim
 
@@ -106,6 +107,41 @@ python3 -m warehaus --config example/warehaus.toml verify
 python3 -m warehaus --config example/warehaus.toml stand --check
 ```
 
+## Use it with your agent
+
+Warehaus is built to be operated by an agent, not by hand. You ask business
+questions in a Claude Code (or Codex, OpenClaw, Hermes) session; the agent
+queries the source APIs through your CLI tools, answers from the claims, and
+maintains them as it learns. The commands above are the guardrails around
+that loop, and the same commands gate your CI.
+
+Two pieces wire the agent in:
+
+**Project instructions.** `warehaus init` writes an `AGENTS.md` with the
+working rules (answer from claims, update the claim on correction, lint
+before committing, `executed` is not `confirmed`) and a `CLAUDE.md` that
+points to it. Codex, Cursor and OpenClaw read `AGENTS.md` natively; Claude
+Code follows the pointer. An agent that opens a scaffolded project knows the
+rules without being told.
+
+**The warehaus skill.** [skills/warehaus/SKILL.md](skills/warehaus/SKILL.md)
+teaches an agent the full workflow: when to write which claim type, how to
+handle a user correction, how to read verify verdicts. It follows the
+[agentskills](https://agentskills.io) format, so Claude Code, Hermes and
+OpenClaw all load it. Install it with
+
+```bash
+npx skills add brianadvent/warehaus
+```
+
+or copy `skills/warehaus/` into your agent's skill directory (for Claude
+Code: `~/.claude/skills/`).
+
+A session then looks like this: you say "our billing API returns cents, I
+keep seeing inflated numbers", the agent writes a `structure` claim with a
+verify command, runs `warehaus lint`, and every later revenue question in
+any session starts from that recorded, checkable fact.
+
 ## Numbers never live in prose
 
 A retrievable number never goes into documentation text, because text ages
@@ -121,33 +157,15 @@ The product catalog currently lists
 (including hand edits), and `warehaus contradictions` flags the same number
 appearing in a second claim or in loose prose.
 
-## Works with any agent
-
-Everything is a CLI plus Markdown, so any agent with a shell can run it:
-Claude Code, Codex, OpenClaw, Hermes. `warehaus init` writes an `AGENTS.md`
-with the working rules (answer from claims, update the claim on correction,
-lint before committing) and a `CLAUDE.md` that points to it.
-
 ## What ships today, what is planned
 
-Today: the five commands, the claim schema, the offline example project,
-tests and CI. Planned next: a `connect-a-source` skill that walks an agent
-through wrapping a new API (auth, rate limits, pagination) and recording its
-quirks as claims, a `nightly-loop` skill for unattended maintenance runs
-that end in a pull request, and a small TypeScript library with the shared
-pieces of our API wrappers (rate limiter, paginator, formatter).
-
-## Origin
-
-Warehaus is the extracted method behind the internal data warehouse of
-[Stapelstein](https://stapelstein.de) (joboo GmbH), the German maker of
-children's balance and movement toys. That system connects twelve business
-APIs, from billing to fulfillment, and its agents answer revenue questions
-that cross all of them. The claim system exists because we kept finding the
-same failure: a number documented in three files, three different values,
-no way to tell which one was checked and when. Warehaus is that lesson,
-generalized. Since the company makes stacking stones, a tool of this family
-was always going to be named after a house.
+Today: the five commands, the claim schema, the warehaus skill, the offline
+example project, tests and CI. Planned next: a `connect-a-source` skill that
+walks an agent through wrapping a new API (auth, rate limits, pagination)
+and recording its quirks as claims, a `nightly-loop` skill for unattended
+maintenance runs that end in a pull request, and a small TypeScript library
+with the shared pieces of our API wrappers (rate limiter, paginator,
+formatter).
 
 ## License
 
