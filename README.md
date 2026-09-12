@@ -8,104 +8,191 @@
    \_/\_/ \__,_|_|  \___||_| |_|\__,_|\__,_|___/
 ```
 
-**An intelligent data warehouse for AI agents.** No ETL, no copies: your
-agent queries the source systems directly, guided by curated, verifiable
-knowledge.
+Warehaus helps an AI agent answer questions about your business from the
+systems that hold the data: the shop, the accounting software, the CRM, the
+fulfillment provider. It gives the agent two things the raw APIs cannot
+provide on their own: a way to reach each system, and the knowledge of how
+to read what comes back.
 
-Company knowledge rarely lives in one place. It is spread across the shop,
-the accounting system, the CRM, fulfillment, spreadsheets, and the heads of
-individual people. So every new question about your own data becomes a
-ticket for an analyst or a developer, and every answer becomes a report
-that starts aging the day it ships.
+Warehaus is a way of working, a small Python command-line tool that checks
+your knowledge files, three skills that teach an agent the workflow, and a
+TypeScript library for writing the API wrappers. Your data stays in the
+systems that own it.
 
-Warehaus makes that knowledge legible to an AI agent instead. Thin CLI
-tools give the agent controlled access to the live systems. The business
-context that raw APIs cannot carry (which system is the source of truth for
-what, how revenue is calculated, which invoices do not count, what a
-colleague knows that no database shows) is recorded as **claims**:
-plain-Markdown statements with provenance, an as-of date and a command that
-checks each one against its source. The agent reads them, obeys them and
-maintains them. A classic warehouse copies your data into a central
-database and buries the rules in pipeline code; warehaus copies nothing and
-keeps the rules where every reader, human or machine, can check them.
+## Why you would want this
 
-## What you can do with it
+Suppose someone at your company asks: "Which wholesale customers ordered
+less this quarter than last?" Today that question becomes a ticket. An
+analyst joins the CRM export with the invoice export, remembers that the
+billing system counts in cents, filters out the cancelled invoices, and
+sends a spreadsheet that is out of date a week later.
 
-**Answer cross-system questions in minutes.** "Which wholesale partners
-are going quiet?" joins the CRM with the invoices. "Which marketing
-channel is actually profitable?" joins ad spend with orders. The agent
-queries the live APIs, applies the recorded rules (amounts converted,
-cancellations excluded, the right source per sales channel) and can name
-the basis of every number: which claims, which derivation, verified when.
-Nobody builds a report, and there is no stale copy to distrust.
+An agent with shell access can do the same work in minutes. It can call the
+CRM API, call the billing API and join the two. What it lacks is everything
+the analyst carries in their head: which system is right when two disagree,
+that amounts arrive in cents, that cancelled invoices still show up in the
+list, that the biggest customer orders through a subsidiary under a
+different name.
 
-**Record a rule once, benefit in every session.** You say "our billing API
-returns cents, I keep seeing inflated numbers." The agent writes a
-`structure` claim with a verify command and runs `warehaus lint`. Every
-later session, by any agent on any machine, divides by 100 without being
-told. Corrections work the same way: when a human corrects the agent, the
-fix lands in the claim, not in one chat that scrolls away.
+Warehaus is where that knowledge lives. You, or the agent while it works,
+write it down as short statements in Markdown, each with its source, a date
+and a command that checks whether it still holds. The agent reads them
+before it answers and updates them when someone corrects it. The next
+person who asks, in their own session on their own laptop, gets the same
+rules applied.
 
-**Let the agent watch and act within defined bounds.** The `nightly-loop`
-skill runs unattended: drift in generated counts, refuted claims, dead
-references, contradictions. It triages, fixes one finding on a branch and
-opens a pull request with the evidence. It never merges. You wake up to a
-reviewable proposal, not to silently changed knowledge.
+## What you get
 
-**Feed your own tools from the same foundation.** The CLI tools and claims
-that serve the agent also serve dashboards, internal apps and one-off
-scripts. The business logic lives in one place instead of one copy per
-tool, so an update to a claim reaches everything built on top.
+- **Answers with a basis.** The agent can say which rules it applied,
+  where they come from and when they were last checked, for every number
+  it reports.
+- **Corrections that stick.** Someone tells the agent "these numbers are a
+  hundred times too high, the API returns cents." The fix lands in a claim,
+  not in a chat that scrolls away. Every later session divides by 100.
+- **Knowledge that ages visibly.** Every claim carries an as-of date.
+  `warehaus verify` runs the check commands and reports which claims still
+  hold, which were refuted, and which need a human look.
+- **One place for the rules.** Dashboards, scripts and the agent read the
+  same claims. A corrected rule reaches everything built on it.
+- **The same knowledge for the whole team.** The files live in git. Everyone
+  who opens the project works with the same rules, and a correction from one
+  person reaches the others on the next pull.
+- **Maintenance you can leave running.** The `nightly-loop` skill checks for
+  drift and refuted claims, fixes one finding on a branch and opens a pull
+  request with the evidence. It never merges.
 
-**Keep humans the judges.** The more runs on this foundation, the more
-weight human judgment carries. Claims disclose their data basis,
-assumptions and derivation, so people can check them and take
-responsibility for decisions built on them. `warehaus verify` reports
-honestly (a command that merely ran is `executed`, never `confirmed`), and
-unattended runs end in pull requests a person merges or rejects.
+## How it fits together
 
-## Use it with your agent
+```
+  your systems            the agent's hands              what the agent knows
+  ------------            -----------------              --------------------
+  shop API        <---    tools/shop.ts                  knowledge/*.md
+  billing API     <---    tools/billing.ts     ------>   one fact per claim, with
+  CRM API         <---    tools/crm.ts                   source, date, check command
+                          thin CLI wrappers,                      |
+                          --format=json                           v
+                                                         warehaus lint | verify |
+                                                         contradictions | stand
+                                                         checks the knowledge,
+                                                         gates your CI
+```
 
-Warehaus is built to be operated by an agent, not by hand. You ask business
-questions in a Claude Code (or Codex, OpenClaw, Hermes) session; the agent
-queries the source APIs through your CLI tools, answers from the claims, and
-maintains them as it learns. The warehaus commands are the guardrails
-around that loop, and the same commands gate your CI.
+The agent sits in the middle. It reads the claims, calls the tools, answers,
+and writes new claims when it learns something. The `warehaus` commands make
+sure the claims stay well-formed and true.
 
-Two pieces wire the agent in:
+## What a session looks like
 
-**Project instructions.** `warehaus init` writes an `AGENTS.md` with the
-working rules (answer from claims, update the claim on correction, lint
-before committing, `executed` is not `confirmed`) and a `CLAUDE.md` that
-points to it. Codex, Cursor and OpenClaw read `AGENTS.md` natively; Claude
-Code follows the pointer. An agent that opens a scaffolded project knows the
-rules without being told.
+```
+You    How much did we invoice in August, without cancellations?
 
-**The skills.** Three skills in [skills/](skills/) teach an agent the
-workflows, in the [agentskills](https://agentskills.io) format that Claude
-Code, Hermes and OpenClaw all load:
+Agent  Reading knowledge/sources.md. Two claims apply:
+         billing-amounts-in-cents        structure, verified 2026-08-31
+         revenue-excludes-cancellations  rule, decided in ADR-0001
 
-- `warehaus`: the daily loop. When to write which claim type, how to handle
-  a user correction, how to read verify verdicts.
-- `connect-a-source`: wrapping a new API as a CLI tool (auth patterns, rate
-  limits, pagination) and recording its quirks as claims while testing,
-  with a definition of done that ends in claims, not just a script.
-- `nightly-loop`: the unattended maintenance pass described above.
+       $ npx tsx tools/billing.ts invoices --from=2026-08-01 --to=2026-08-31 --format=json
 
-Install them with
+       312 invoices returned, 14 carry a cancel_id and are excluded.
+       Invoiced in August: 48,213.90 EUR (298 invoices, cents divided by 100).
+```
+
+The two claims are the only reason the answer is right. Without them the
+agent would report a figure a hundred times too high with the cancelled
+invoices still in it, and it would sound just as confident.
+
+## Where to start
+
+### 1. Install
+
+Python 3.11 or newer, no dependencies.
+
+```bash
+pip install git+https://github.com/brianadvent/warehaus.git
+```
+
+A PyPI release (`pip install warehaus`) comes with the first public version.
+
+### 2. Create a project
+
+```bash
+mkdir my-warehaus && cd my-warehaus
+warehaus init
+```
+
+This writes `warehaus.toml` (which systems exist, where the knowledge files
+are), a `knowledge/` folder with a claim template, and two instruction
+files: `AGENTS.md` with the working rules and a `CLAUDE.md` that points to
+it. Codex, Cursor and OpenClaw read `AGENTS.md` on their own; Claude Code
+follows the pointer. An agent that opens the folder knows the rules without
+being told.
+
+Then install the skills into your agent:
 
 ```bash
 npx skills add brianadvent/warehaus
 ```
 
-or copy the directories into your agent's skill directory (for Claude Code:
-`~/.claude/skills/`).
+or copy the three folders from [skills/](skills/) into your agent's skill
+directory (for Claude Code: `~/.claude/skills/`).
+
+### 3. Connect your first system
+
+This is where the agent does most of the work. Open the project in Claude
+Code (or Codex, OpenClaw, Hermes), put the API credentials in `.env`, and
+say something like:
+
+> Connect our billing system. The API docs are at docs/billing-api.md and
+> the token is in .env as BILLING_TOKEN.
+
+The `connect-a-source` skill walks the agent through the steps: read the
+docs, classify the authentication, find the rate limit and throttle below
+it, pick the pagination helper, build the wrapper from
+[templates/source-tool.ts](templates/source-tool.ts), and test it against
+the real API. While testing, the agent writes down every quirk it finds as a
+claim: amounts in cents, timestamps in the account's timezone, a filter that
+silently ignores its value, the scopes the token has. A system counts as
+connected when the tool works and those claims exist. A folder of scripts
+without claims is the failure mode this whole setup exists to prevent.
+
+Then run
+
+```bash
+warehaus lint      # are the claims well-formed?
+warehaus verify    # do they still hold against the source?
+```
+
+Each wrapper is a short TypeScript file the agent writes against your API
+and your plan, so it fits your setup rather than a generic one. [lib/](lib/)
+has the pieces every wrapper needs (two rate limiters, page- and
+cursor-based pagination, `--format=json|table|csv` output, `.env` loading),
+with no dependencies.
+
+### 4. Ask, and correct
+
+Ask a question. When the answer is wrong, say so. The agent's job on a
+correction is to change the claim, not to apologise; the `warehaus` skill
+tells it how. This loop is how the knowledge grows, one correction at a
+time, and why the fifth question is easier to answer than the first.
+
+### Try it without an API
+
+The repository contains a fictional toy shop with two systems that runs
+entirely offline:
+
+```bash
+git clone https://github.com/brianadvent/warehaus.git && cd warehaus
+python3 -m warehaus --config example/warehaus.toml lint
+python3 -m warehaus --config example/warehaus.toml verify
+python3 -m warehaus --config example/warehaus.toml stand --check
+```
+
+Read [example/knowledge/sources.md](example/knowledge/sources.md) to see
+what a small set of real claims looks like.
 
 ## How knowledge is recorded
 
-Knowledge is recorded one fact per block, directly in your Markdown files.
-The unit is called a claim: a statement plus the metadata that makes it
-checkable.
+One fact per block, directly in your Markdown files. The unit is called a
+claim: a statement plus the metadata that makes it checkable.
 
 ```markdown
 <!-- claim
@@ -122,15 +209,16 @@ before displaying them or adding them to figures from other systems.
 <!-- /claim -->
 ```
 
-Every claim names its source of truth (`sot`), how it is maintained, when it
-was last checked and how to check it again. The full schema, with seven claim
-types from `structure` to `experience`, is in
-[docs/claim-schema.md](docs/claim-schema.md).
+`sot` is the source of truth the claim rests on, `maintenance` says how it
+is kept current, `as_of` when it was last checked and `verify_cmd` how to
+check it again. There are seven claim types, from `structure` (how a system
+behaves) to `experience` (what a colleague knows that no database shows).
+The full schema is in [docs/claim-schema.md](docs/claim-schema.md).
 
-One discipline follows from this and keeps a project honest: a retrievable
-number never goes into documentation text, because text ages silently. A
-count belongs in a `count` claim with a generated range that `warehaus
-stand` owns and checks for drift:
+One rule follows from this and keeps a project honest: a number you could
+look up never goes into prose, because prose ages silently. A count belongs
+in a `count` claim with a generated range that `warehaus stand` writes and
+checks for drift:
 
 ```markdown
 The product catalog currently lists
@@ -140,7 +228,7 @@ The product catalog currently lists
 ## The commands
 
 ```
-warehaus init             scaffold a project: config, knowledge area, agent instructions
+warehaus init             scaffold a project: config, knowledge folder, agent instructions
 warehaus lint             form, required fields, value ranges, ID uniqueness, references
 warehaus verify           run each claim's verify_cmd against the live source
 warehaus contradictions   the same number in two claims, dead references, duplicates
@@ -150,63 +238,18 @@ warehaus stand            generated counts: collect, check for drift, write
 All five share one exit convention (0 green, 1 red, 2 not runnable), so they
 drop into any CI or release gate.
 
-`verify` is the honest one. Most verify commands fetch rather than assert, so
-it reports four verdicts instead of pretending exit 0 means true:
+`verify` deserves a closer look. Most check commands fetch rather than
+assert, so it reports four verdicts instead of treating exit 0 as proof:
 
 | Verdict | Meaning |
 |---|---|
 | `confirmed` | a real assertion passed, or the generated value matches |
 | `refuted` | an assertion failed, or a search no longer finds the spot the claim cites |
-| `executed` | the fetch ran clean; whether the claim text is right still needs a semantic cross-check |
+| `executed` | the fetch ran clean; whether the claim text is right still needs a human or agent to compare |
 | `unverifiable` | placeholder in the command, timeout, suspected write access |
 
 Only `confirmed` advances the as-of date. A checker that counted every clean
 fetch as a confirmation would report every claim green and guard nothing.
-
-## Install
-
-Python 3.11 or newer, no dependencies.
-
-```bash
-pip install git+https://github.com/brianadvent/warehaus.git
-```
-
-A PyPI release (`pip install warehaus`) comes with the first public version.
-
-## Quickstart
-
-```bash
-mkdir my-warehaus && cd my-warehaus
-warehaus init
-```
-
-This writes `warehaus.toml`, a `knowledge/` area with a claim template, and
-the agent instruction files. Then:
-
-1. List your source systems under `[schema] sots` in `warehaus.toml`.
-2. Write your first claim in `knowledge/sources.md` (copy the template).
-3. Run `warehaus lint`, then `warehaus verify`.
-
-Or try the bundled example project, a fictional toy shop that runs entirely
-offline:
-
-```bash
-git clone https://github.com/brianadvent/warehaus.git && cd warehaus
-python3 -m warehaus --config example/warehaus.toml lint
-python3 -m warehaus --config example/warehaus.toml verify
-python3 -m warehaus --config example/warehaus.toml stand --check
-```
-
-## Building your source tools
-
-The agent needs CLI access to your systems. [lib/](lib/) has the shared
-pieces every wrapper needs, as dependency-free TypeScript run with `npx
-tsx`: two rate limiters with the tuning rule (throttle below the documented
-maximum, leave shared keys extra headroom), page- and cursor-based
-pagination, `--format=json|table|csv` output, and `.env` loading.
-[templates/source-tool.ts](templates/source-tool.ts) shows all of it in one
-working wrapper, and the `connect-a-source` skill turns the two into a
-repeatable procedure your agent executes against a real API.
 
 ## License
 
