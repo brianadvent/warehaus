@@ -151,8 +151,7 @@ it, pick the pagination helper, build the wrapper from
 the real API. While testing, the agent writes down every quirk it finds as a
 claim: amounts in cents, timestamps in the account's timezone, a filter that
 silently ignores its value, the scopes the token has. A system counts as
-connected when the tool works and those claims exist. A folder of scripts
-without claims is the failure mode this whole setup exists to prevent.
+connected when the tool works and those claims exist.
 
 Then run
 
@@ -215,16 +214,6 @@ check it again. There are seven claim types, from `structure` (how a system
 behaves) to `experience` (what a colleague knows that no database shows).
 The full schema is in [docs/claim-schema.md](docs/claim-schema.md).
 
-One rule follows from this and keeps a project honest: a number you could
-look up never goes into prose, because prose ages silently. A count belongs
-in a `count` claim with a generated range that `warehaus stand` writes and
-checks for drift:
-
-```markdown
-The product catalog currently lists
-<!--gen:product-catalog-size-->1366<!--/gen--> SKUs.
-```
-
 ## The commands
 
 ```
@@ -238,18 +227,10 @@ warehaus stand            generated counts: collect, check for drift, write
 All five share one exit convention (0 green, 1 red, 2 not runnable), so they
 drop into any CI or release gate.
 
-`verify` deserves a closer look. Most check commands fetch rather than
-assert, so it reports four verdicts instead of treating exit 0 as proof:
-
-| Verdict | Meaning |
-|---|---|
-| `confirmed` | a real assertion passed, or the generated value matches |
-| `refuted` | an assertion failed, or a search no longer finds the spot the claim cites |
-| `executed` | the fetch ran clean; whether the claim text is right still needs a human or agent to compare |
-| `unverifiable` | placeholder in the command, timeout, suspected write access |
-
-Only `confirmed` advances the as-of date. A checker that counted every clean
-fetch as a confirmation would report every claim green and guard nothing.
+`verify` reports four verdicts: `confirmed`, `refuted`, `executed` (the
+command ran, but only a human or an agent comparing output and claim text
+can say whether the claim holds) and `unverifiable`. Only `confirmed`
+advances the as-of date.
 
 ## License
 
