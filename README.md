@@ -14,10 +14,10 @@ fulfillment provider. It gives the agent two things the raw APIs cannot
 provide on their own: a way to reach each system, and the knowledge of how
 to read what comes back.
 
-Warehaus is a way of working, a small Python command-line tool that checks
-your knowledge files, three skills that teach an agent the workflow, and a
-TypeScript library for writing the API wrappers. Your data stays in the
-systems that own it.
+Warehaus is a way of working, a small command-line tool that checks your
+knowledge files, three skills that teach an agent the workflow, and a
+library for writing the API wrappers. All of it is TypeScript, installed
+with npm. Your data stays in the systems that own it.
 
 ## Why you would want this
 
@@ -104,13 +104,14 @@ invoices still in it, and it would sound just as confident.
 
 ### 1. Install
 
-Python 3.11 or newer, no dependencies.
+Node 20 or newer.
 
 ```bash
-pip install git+https://github.com/brianadvent/warehaus.git
+npm install -g github:brianadvent/warehaus
 ```
 
-A PyPI release (`pip install warehaus`) comes with the first public version.
+An npm release (`npm install -g warehaus`) comes with the first public
+version.
 
 ### 2. Create a project
 
@@ -179,10 +180,10 @@ The repository contains a fictional toy shop with two systems that runs
 entirely offline:
 
 ```bash
-git clone https://github.com/brianadvent/warehaus.git && cd warehaus
-python3 -m warehaus --config example/warehaus.toml lint
-python3 -m warehaus --config example/warehaus.toml verify
-python3 -m warehaus --config example/warehaus.toml stand --check
+git clone https://github.com/brianadvent/warehaus.git
+warehaus --config warehaus/example/warehaus.toml lint
+warehaus --config warehaus/example/warehaus.toml verify
+warehaus --config warehaus/example/warehaus.toml stand --check
 ```
 
 Read [example/knowledge/sources.md](example/knowledge/sources.md) to see

@@ -9,15 +9,19 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python: ["3.11", "3.13"]
+        node: ["20", "22"]
     steps:
       - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-node@v4
         with:
-          python-version: ${{ matrix.python }}
+          node-version: ${{ matrix.node }}
+          cache: npm
+      - run: npm ci
       - name: Unit tests
-        run: python -m unittest discover tests
+        run: npm test
       - name: Lint the example project
-        run: python -m warehaus --config example/warehaus.toml lint
+        run: npm run example:lint
       - name: Contradiction search on the example project
-        run: python -m warehaus --config example/warehaus.toml contradictions
+        run: npm run example:contradictions
+      - name: Drift check on the example project
+        run: npm run example:stand

@@ -1,0 +1,38 @@
+{
+  "name": "warehaus",
+  "version": "0.1.0",
+  "description": "Curated, verifiable knowledge for AI agents over live source systems.",
+  "license": "MIT",
+  "author": "Daniel Autenrieth",
+  "repository": "github:brianadvent/warehaus",
+  "type": "module",
+  "bin": {
+    "warehaus": "dist/src/cli.js"
+  },
+  "files": [
+    "dist/src",
+    "lib",
+    "templates",
+    "skills",
+    "docs/claim-schema.md"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "prepare": "npm run build",
+    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "example:lint": "node dist/src/cli.js --config example/warehaus.toml lint",
+    "example:verify": "node dist/src/cli.js --config example/warehaus.toml verify",
+    "example:stand": "node dist/src/cli.js --config example/warehaus.toml stand --check",
+    "example:contradictions": "node dist/src/cli.js --config example/warehaus.toml contradictions"
+  },
+  "dependencies": {
+    "smol-toml": "^1.8.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.14.0",
+    "typescript": "^5.5.0"
+  }
+}
