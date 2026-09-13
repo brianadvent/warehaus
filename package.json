@@ -22,7 +22,7 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "prepare": "npm run build",
-    "test": "npm run build && node --test \"dist/tests/*.test.js\"",
+    "test": "npm run build && node --test dist/tests/smoke.test.js dist/tests/stand.test.js",
     "example:lint": "node dist/src/cli.js --config example/warehaus.toml lint",
     "example:verify": "node dist/src/cli.js --config example/warehaus.toml verify",
     "example:stand": "node dist/src/cli.js --config example/warehaus.toml stand --check",
